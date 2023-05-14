@@ -1,0 +1,144 @@
+#include <iostream>
+#include <fstream>
+#include <vector>
+#include <chrono>
+
+// Функция для сжатия данных с помощью алгоритма RLE
+std::vector<char> compressRLE(const std::string& input) {
+    std::vector<char> compressedData;
+
+    int count = 1;
+    for (int i = 1; i < input.size(); ++i) {
+        if (input[i] == input[i - 1]) {
+            count++;
+        } else {
+            compressedData.push_back(static_cast<char>(count));
+            compressedData.push_back(input[i - 1]);
+            count = 1;
+        }
+    }
+
+    compressedData.push_back(static_cast<char>(count));
+    compressedData.push_back(input[input.size() - 1]);
+
+    return compressedData;
+}
+
+// Функция для распаковки данных сжатых с помощью алгоритма RLE
+std::string decompressRLE(const std::vector<char>& compressedData) {
+    std::string decompressedData;
+
+    for (int i = 0; i < compressedData.size(); i += 2) {
+        int count = static_cast<int>(compressedData[i]);
+        char symbol = compressedData[i + 1];
+
+        for (int j = 0; j < count; ++j) {
+            decompressedData += symbol;
+        }
+    }
+
+    return decompressedData;
+}
+
+// Функция для записи сжатых данных в файл
+void writeCompressedDataToFile(const std::string& filename, const std::vector<char>& compressedData) {
+    std::ofstream outputFile(filename, std::ios::binary);
+    outputFile.write(compressedData.data(), compressedData.size());
+    outputFile.close();
+}
+
+// Функция для чтения сжатых данных из файла
+std::vector<char> readCompressedDataFromFile(const std::string& filename) {
+    std::ifstream inputFile(filename, std::ios::binary);
+    std::vector<char> compressedData(std::istreambuf_iterator<char>(inputFile), {});
+    inputFile.close();
+    return compressedData;
+}
+
+// Функция для выполнения операции сжатия
+void performCompression() {
+    std::string inputFilename, outputFilename;
+    std::cout << "Enter input file name: ";
+    std::cin >> inputFilename;
+    std::cout << "Enter output file name: ";
+    std::cin >> outputFilename;
+
+    std::ifstream inputFile(inputFilename, std::ios::binary);
+    if (!inputFile) {
+        std::cerr << "Failed to open file: " << inputFilename << std::endl;
+        return;
+    }
+
+    std::string inputData(std::istreambuf_iterator<char>(inputFile), {});
+    inputFile.close();
+
+    auto start = std::chrono::high_resolution_clock::now(); // Запуск таймера
+
+    std::vector<char> compressedData = compressRLE(inputData);
+
+    auto end = std::chrono::high_resolution_clock::now(); // Остановка таймера
+    std::chrono::duration<double> duration = end - start; // Вычисление длительности
+
+    writeCompressedDataToFile(outputFilename, compressedData);
+    std::cout << "Compression completed. Result saved to file: " << outputFilename << std::endl;
+std::cout << "Compression time: " << duration.count() << " seconds" << std::endl; // Вывод времени сжатия
+}
+
+// Функция для выполнения операции распаковки
+void performDecompression() {
+std::string inputFilename, outputFilename;
+std::cout << "Enter compressed file name for decompression: ";
+std::cin >> inputFilename;
+std::cout << "Enter output file name for decompressed data: ";
+std::cin >> outputFilename;
+std::vector<char> compressedData = readCompressedDataFromFile(inputFilename);
+
+auto start = std::chrono::high_resolution_clock::now(); // Запуск таймера
+
+std::string decompressedData = decompressRLE(compressedData);
+
+auto end = std::chrono::high_resolution_clock::now(); // Остановка таймера
+std::chrono::duration<double> duration = end - start; // Вычисление длительности
+
+std::ofstream outputFile(outputFilename, std::ios::binary);
+if (!outputFile) {
+    std::cerr << "Failed to open file for writing: " << outputFilename << std::endl;
+    return;
+}
+
+outputFile.write(decompressedData.data(), decompressedData.size());
+outputFile.close();
+
+std::cout << "Decompression completed. Result saved to file: " << outputFilename << std::endl;
+std::cout << "Decompression time: " << duration.count() << " seconds" << std::endl; // Вывод времени распаковки
+}
+
+int main() {
+setlocale(LC_ALL, "Russian");
+int choice;
+do {
+    std::cout << "Меню:\n";
+    std::cout << "1. Сжать файл\n";
+    std::cout << "2. Распаковать файл\n";
+    std::cout << "3. Выход\n";
+    std::cout << "Введите номер операции: ";
+    std::cin >> choice;
+
+    switch (choice) {
+        case 1:
+            performCompression();
+            break;
+        case 2:
+            performDecompression();
+            break;
+        case 3:
+            std::cout << "Выход\n";
+            break;
+        default:
+            std::cout << "Неверный выбор. Попробуйте снова.\n";
+            break;
+    }
+} while (choice != 3);
+
+return 0;
+}
